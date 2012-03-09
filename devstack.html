@@ -134,9 +134,9 @@ body>#menu {/*nasty dodge to deal with ie pc's unbelievable lack of position:fix
       <dl>
         <dt>Nova config file is now in INI format</dt>
         <dd>Recent work by <em>markmc</em> to unify the configuration files for
-          OpenStack projects has now alloed us to change the default Nova config file
+          OpenStack projects has now allowed us to change the default Nova config file
           <code>(/etc/nova/nova.conf)</code> from flagfile format to the new
-          config-supporte INI format.</dd>
+          <code>cfg.py</code>-supported INI format.</dd>
 
         <dt>Keystone Initialization</dt>
         <dd>In DevStack the Keystone database is initialized by
@@ -152,12 +152,37 @@ body>#menu {/*nasty dodge to deal with ie pc's unbelievable lack of position:fix
           does.
           <pre>killall screen
 ./rejoin-stack.sh</pre></dd>
+
+        <dt>EC2 Credentials</dt>
+        <dd>EC2 credentials are generated and environment variables set by the
+          <code>eucarc</code> script.  Since it sets environment variables it must
+          be sourced and not executed in a sub-shell:
+          <pre>. eucarc</pre>
+          Every time it is used, <code>eucarc</code> generates a new set of EC2
+          credentials in Keystone for the current tenant/user pair.  The tenant
+          and user may be changed either by setting environment variables 
+          <code>TENANT</code> and <code>USERNAME</code> or by including the
+          user and tenant on the <code>eucarc</code> command line:
+          <pre>. eucarc bob builderco</pre>
+          <code>eucarc</code> sets <code>EC2_ACCESS_KEY</code> and 
+          <code>EC2_SECRET_KEY</code> from the credentials created by Keystone.
+          It also sets <code>EC2_URL</code> and <code>S3_URL</code> (if they exist)
+          to the URLs returned in Keystone's service catalog for the EC2 and S3
+          endpoints, respectively.
+          <br /><br />
+          In addition, <code>NOVA_CERT</code> (CA certificate), <code>EC2_CERT</code>
+          (user certificate) and <code>EC2_PRIVATE_KEY</code> (user private key)
+          are set to the locations of these files.  The files are created by
+          <code>nova x509-*</code> commands as demonstrated in
+          <code>exercise/bundle.sh</code>.</dd>
+
+          
       </dl>
 
       <br />
       <h3>localrc Tips</h3>
       <p>Exploring the dusty corners of DevStack configuration.  Set the following
-        in <code>localrc</code>.</p>
+        in <code>localrc</code>:</p>
       <dl>
         <dt>Minimal contents</dt>
         <dd>While stack.sh is happy to run without <code>localrc</code>, devlife
@@ -167,6 +192,14 @@ MYSQL_PASSWORD=stackdb
 RABBIT_PASSWORD=stackqueue
 SERVICE_PASSWORD=$ADMIN_PASSWORD
 HOST_IP=w.x.y.z</pre>
+          If the <code>*_PASSWORD</code> variables are not set here you will
+          be prompted to enter values for them by <code>stack.sh</code>.
+          <br /><br />
+          <code>HOST_IP</code> is normally detected on the first run of
+          <code>stack.sh</code>
+          but often is indeterminate on later runs due to the IP being moved from
+          an Ethernet integace to a bridge on the host.  Just set it and be done
+          with it.</dd><br />
 
         <dt>Set DevStack install directory</dt>
         <dd>The DevStack install directory is set by the <code>DEST</code> variable.
