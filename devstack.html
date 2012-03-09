@@ -76,6 +76,10 @@ body>#menu {/*nasty dodge to deal with ie pc's unbelievable lack of position:fix
   padding-top: 1em;
 }
 
+.text {
+  margin: 0px 50px 0px 50px;
+}
+
 </style>
 
 </head>
@@ -101,7 +105,7 @@ body>#menu {/*nasty dodge to deal with ie pc's unbelievable lack of position:fix
         <img src="pix/xr7/xr7logot.gif" id="logoimg" alt="" /></a>
       <span id="title">
         <a class="white" href="http://random.xr7.org/pn/index.php">
-          &nbsp;random stuff:&nbsp;DrStack
+          &nbsp;random stuff:&nbsp;DevStack
         </a>
       </span>
     </span>
@@ -121,18 +125,117 @@ body>#menu {/*nasty dodge to deal with ie pc's unbelievable lack of position:fix
       </p>
     </div>
 
-    <div>
+    <div class="text">
       <br />
-      <h2 style="margin-left:4em;">DrStack OpenStack CLI</h2>
-      <p>DrStack is an oddly named common command-line client for the 
-      OpenStack Identity, Compute and Image APIs. It is a thin wrapper 
-      to the stock python-keystoneclient, python-novaclient and glance 
-      libraries that implement the actual API clients.</p>
+      <h2>DevStack Notes</h2>
+      <p><a href="http://devstack.org" alt="DevStack">DevStack</a> is cool.  Try it out.</p>
+      <p>Here are some useful bits'o'knowledge on recent developments in DevStack:</p>
 
-      <p>DrStack's primary goal is to provide a unified shell command 
-      structure and (as much as possible) a common language to describe 
-      operations in OpenStack.</p>
+      <dl>
+        <dt>Nova config file is now in INI format</dt>
+        <dd>Recent work by <em>markmc</em> to unify the configuration files for
+          OpenStack projects has now alloed us to change the default Nova config file
+          <code>(/etc/nova/nova.conf)</code> from flagfile format to the new
+          config-supporte INI format.</dd>
 
+        <dt>Keystone Initialization</dt>
+        <dd>In DevStack the Keystone database is initialized by
+          <code>files/keystone_data.sh</code>.  This file demonstrates using
+          <code>SERVICE_ENDPOINT</code> and <code>SERVICE_TOKEN</code> to get
+          the administative tenant, user and role set up.</dd>
+
+        <dt>Restart screen processes without re-running <code>stack.sh</code></dt>
+        <dd><code>stack.sh</code> now writes <code>stack-screenrc</code> when it
+          runs that contains the information about the screen sessions it creates.
+          It is now possible to stop and restart the screen sessions without
+          re-initializing the databases and everything that <code>stack.sh</code>
+          does.
+          <pre>killall screen
+./rejoin-stack.sh</pre></dd>
+      </dl>
+
+      <br />
+      <h3>localrc Tips</h3>
+      <p>Exploring the dusty corners of DevStack configuration.  Set the following
+        in <code>localrc</code>.</p>
+      <dl>
+        <dt>Minimal contents</dt>
+        <dd>While stack.sh is happy to run without <code>localrc</code>, devlife
+          is better when there are a few minimal variables set.
+          <pre>ADMIN_PASSWORD=nomoresecrete
+MYSQL_PASSWORD=stackdb
+RABBIT_PASSWORD=stackqueue
+SERVICE_PASSWORD=$ADMIN_PASSWORD
+HOST_IP=w.x.y.z</pre>
+
+        <dt>Set DevStack install directory</dt>
+        <dd>The DevStack install directory is set by the <code>DEST</code> variable.
+          By setting it early in localrc you can reference it in later variables.
+          The default value is <code>/opt/stack</code>.  I usually set it even though
+          I don't change it from the default.
+          <pre>DEST=/opt/stack</pre></dd>
+
+        <dt>stack.sh logging</dt>
+        <dd>You can log the output of stack.sh to a file in addition to the console
+          by setting <code>LOGFILE</code> to the fully-qualified name of the
+          destination log file.  A timestamp will be appended.
+          <pre>LOGFILE=stack.sh.log</pre>
+          Clean up old log files automatically by setting <code>LOGDAYS</code> to the
+          number of days of old log files to keep.
+          <pre>LOGDAYS=1</pre>
+          </dd>
+
+        <dt>Set the default instance type</dt>
+        <dd>I am often running DevStack in a smallish VM (1GB RAM) and need to watch
+          the size of VMs launched indie that environment.  Creating a custom flavor 
+          and setting <code>DEFAULT_INSTANCE_TYPE</code> to point to it lets me run
+          more than one VM at a time in my development system.
+          <pre>DEFAULT_INSTANCE_TYPE=m1.micro</pre>
+          Define the <code>m1.micro</code> flavor:
+          <pre>nova-manage instance_type create m1.micro 128 1 0 0 6 0 1</pre></dd>
+
+        <dt>A clean install every time</dt>
+        <dd>By default stack.sh does not update the project repos when it runs
+          if they already exist.  Sometimes you may want to get a fresh copy
+          without deleting the directories first.  Set <code>RECLONE</code>
+          and <code>stack.sh</code> will freshen each repo on each run.
+          This avoids having to re-download the entire repo full of objects
+          from GitHub, and let's face it, the Nova repo is getting rather large.
+          <pre>RECLONE=yes</code></dd>
+
+        <dt>One syslog to bind them all</dt>
+        <dd>Especially in multi-host deplyments logging all services to a single
+          syslog can be convenient.  Enable syslogging by seting <code>SYSLOG</code>.
+          If the log host is not the local host, <code>SYSLOG_HOST</code> and
+          <code>SYSLOG_PORT</code> can be used to direct the message stream.
+          <pre>SYSLOG=true
+SYSLOG_HOST=$HOST_IP
+SYSLOG_PORT=516</pre></dd>
+
+        <dt>Multi-host DevStack</dt>
+        <dd>Running DevStack with multiple hosts requires a custom <code>localrc</code>
+          file for each host.  The master is generally the same, except that
+          <code>MULTI_HOST</code> is set.  The slaves will have fewer services
+          enabled and a couple of host variables pointing to the master.
+          <br /><br />
+          Master
+          <pre>MULTI_HOST=1
+ENABLED_SERVICES=g-api,g-reg,key,n-api,n-crt,n-obj,n-vol,n-cpu,n-net,n-sch,n-novnc,n-xvnc,n-cauth,horizon,mysql,rabbit</pre>
+
+          Slave
+          <pre>MYSQL_HOST=w.x.y.z
+RABBIT_HOST=w.x.y.z
+GLANCE_HOSTPORT=w.x.y.z:9292
+ENABLED_SERVICES=n-vol,n-cpu,n-net,n-api</pre></dd>
+      </dl>
+
+          <dt>API rate limits, testing and you</dt>
+          <dd>Interation tests such as Tempest will likely run afoul of the
+            default rate limits configured for Nova.  Turn off rate limiting
+            diring testing by setting <code>OSAPI_RATE_LIMIT</code>.  Note that
+            due to the implementation, you must set the variable to a space
+            to actually turn off rate limiting.
+            <pre>OSAPI_RATE_LIMIT=" "</pre></dd>
       <br /><br /><br />
 
   </div>
