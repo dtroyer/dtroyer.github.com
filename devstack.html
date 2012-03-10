@@ -218,6 +218,18 @@ HOST_IP=w.x.y.z</pre>
           <pre>LOGDAYS=1</pre>
           </dd>
 
+        <dt>Screen logging</dt>
+        <dd>DevStack runs the OpenStack services under <code>screen</code> which
+          is useful for watching log and debug output.  However, in automated
+          testing the interactive <code>screen</code> sessions are not available
+          after the fact, so setting <code>SCREEN_LOGDIR</code> will enable logging
+          of the <code>screen</code> sessions in the specified diretory.  There
+          will be one file per <code>screen</code> session named for the session
+          name and a timestamp.
+          <pre>SCREEN_LOGDIR=$DEST/logs/screen</pre>
+          Note the use of <code>DEST</code> to locate the main install directory;
+          this is why we set it in <code>localrc</code></dd><br />
+
         <dt>Set the default instance type</dt>
         <dd>I am often running DevStack in a smallish VM (1GB RAM) and need to watch
           the size of VMs launched indie that environment.  Creating a custom flavor 
